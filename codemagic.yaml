@@ -5,7 +5,8 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       node: 20
-      xcode: 15.4
+      xcode: latest
+      cocoapods: default
     scripts:
       - name: Instalar dependencias
         script: |
