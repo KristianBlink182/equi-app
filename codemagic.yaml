@@ -4,7 +4,7 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
-      node: latest
+      node: 20
       xcode: latest
     scripts:
       - name: Instalar dependencias
@@ -18,8 +18,19 @@ workflows:
           cd ios && pod install
       - name: Compilar App (.ipa)
         script: |
-          xcode-project build-ipa \
-            --workspace "ios/Equi.xcworkspace" \
-            --scheme "Equi"
+          cd ios
+          xcodebuild -workspace Equi.xcworkspace \
+            -scheme Equi \
+            -configuration Release \
+            -destination generic/platform=iOS \
+            -archivePath build/Equi.xcarchive \
+            archive \
+            CODE_SIGNING_ALLOWED=NO
+          
+          mkdir -p ../build/ios/ipa
+          cd build
+          mkdir -p Payload
+          cp -r Equi.xcarchive/Products/Applications/Equi.app Payload/
+          zip -r ../../../build/ios/ipa/Equi.ipa Payload
     artifacts:
       - build/ios/ipa/*.ipa
