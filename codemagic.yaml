@@ -1,0 +1,29 @@
+workflows:
+  ios-release:
+    name: Equi iOS Build
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      node: latest
+      xcode: latest
+    scripts:
+      - name: Instalar dependencias
+        script: |
+          npm install
+      - name: Generar proyecto nativo iOS
+        script: |
+          npx expo prebuild --platform ios --clean
+      - name: Instalar CocoaPods
+        script: |
+          cd ios && pod install
+      - name: Compilar App (.ipa)
+        script: |
+          xcode-project build-ipa \
+            --workspace "ios/Equi.xcworkspace" \
+            --scheme "Equi"
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

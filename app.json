@@ -1,24 +1,57 @@
 {
   "expo": {
-    "name": "salud-app",
-    "slug": "salud-app",
+    "name": "Equi",
+    "slug": "equi-salud",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "ios": {
-      "supportsTablet": true
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
     },
-    "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.equi.saludapp",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Equi necesita tu ubicación para encontrar especialistas en salud mental y nutrición cerca de ti.",
+        "NSPhotoLibraryUsageDescription": "Equi necesita acceso a tus fotos para que puedas subir tu foto de perfil profesional.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
+    "android": {
+      "package": "com.equi.saludapp",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Equi necesita tu ubicación para encontrar especialistas en salud mental y nutrición cerca de ti."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Equi necesita acceso a tus fotos para subir tu foto de especialista."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "1d6ac824-154e-4379-ac30-d9f662184fea"
+      }
     }
   }
 }
