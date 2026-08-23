@@ -16,6 +16,12 @@ workflows:
       - name: Prebuild nativo Expo
         script: |
           npx expo prebuild --platform ios --clean
+      - name: Limpiar Entitlements conflictivos
+        script: |
+          # Elimina el requerimiento de APNs que bloquea la firma
+          if [ -f ios/Equi/Equi.entitlements ]; then
+            sed -i '' '/aps-environment/,+1d' ios/Equi/Equi.entitlements || true
+          fi
       - name: Instalar CocoaPods
         script: |
           cd ios && pod install
