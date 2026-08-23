@@ -19,7 +19,7 @@ workflows:
       - name: Instalar CocoaPods
         script: |
           cd ios && pod install
-      - name: Sincronizar Certificados y Perfiles Apple
+      - name: Sincronizar Certificados Apple
         script: |
           keychain initialize
           app-store-connect fetch-signing-files "com.equi.saludapp" \
