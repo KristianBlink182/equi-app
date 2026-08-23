@@ -19,7 +19,7 @@ workflows:
       - name: Instalar CocoaPods
         script: |
           cd ios && pod install
-      - name: Sincronizar Certificados y Team ID de Apple
+      - name: Descargar certificados y perfiles de Apple
         script: |
           keychain initialize
           app-store-connect fetch-signing-files "com.equi.saludapp" \
@@ -27,15 +27,35 @@ workflows:
             --create
           keychain add-certificates
           xcode-project use-profiles
-      - name: Compilar App con Team ID (.ipa)
+      - name: Compilar App Nativa (.ipa)
         script: |
-          xcode-project build-ipa \
-            --workspace "ios/Equi.xcworkspace" \
-            --scheme "Equi" \
-            --team-id "4R75VHFBHA"
-    artifacts:
-      - build/ios/ipa/*.ipa
-    publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
+          cd ios
+          xcodebuild -workspace Equi.xcworkspace \
+            -scheme Equi \
+            -configuration Release \
+            -destination generic/platform=iOS \
+            -archivePath build/Equi.xcarchive \
+            archive \
+            DEVELOPMENT_TEAM="4R75VHFBHA"
+          
+          cat <<EOF > export_options.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>4R75VHFBHA</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.equi.saludapp</key>
+                  <string>Equi AppStore Profile</string>
+              </dict>
+          </dict>
+          </plist>
+          EOF
+
+          xcodebuild -exportArchive \
