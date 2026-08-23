@@ -19,7 +19,7 @@ workflows:
       - name: Instalar CocoaPods
         script: |
           cd ios && pod install
-      - name: Descargar certificados y perfiles en vivo de Apple
+      - name: Sincronizar Certificados y Team ID de Apple
         script: |
           keychain initialize
           app-store-connect fetch-signing-files "com.equi.saludapp" \
@@ -27,21 +27,12 @@ workflows:
             --create
           keychain add-certificates
           xcode-project use-profiles
-      - name: Compilar App (.ipa)
+      - name: Compilar App con Team ID (.ipa)
         script: |
-          cd ios
-          xcodebuild -workspace Equi.xcworkspace \
-            -scheme Equi \
-            -configuration Release \
-            -archivePath build/Equi.xcarchive \
-            archive \
-            CODE_SIGN_STYLE=Manual \
-            PROVISIONING_PROFILE_SPECIFIER="Equi AppStore Profile"
-          
-          xcodebuild -exportArchive \
-            -archivePath build/Equi.xcarchive \
-            -exportOptionsPlist /Users/builder/export_options.plist \
-            -exportPath ../build/ios/ipa
+          xcode-project build-ipa \
+            --workspace "ios/Equi.xcworkspace" \
+            --scheme "Equi" \
+            --team-id "4R75VHFBHA"
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
