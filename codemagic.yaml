@@ -30,13 +30,16 @@ workflows:
       - name: Compilar App (.ipa)
         script: |
           cd ios
+          
+          # Cambiar a firma manual para evitar conflictos
           xcodebuild -workspace Equi.xcworkspace \
             -scheme Equi \
             -configuration Release \
             -destination generic/platform=iOS \
             -archivePath build/Equi.xcarchive \
-            -allowProvisioningUpdates \
+            CODE_SIGN_STYLE="Manual" \
             DEVELOPMENT_TEAM="4R75VHFBHA" \
+            PROVISIONING_PROFILE_SPECIFIER="Equi AppStore Profile" \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             archive
           
