@@ -6,9 +6,6 @@ workflows:
     integrations:
       app_store_connect: Codemagic Equi
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.equi.saludapp
       node: 20
       xcode: latest
       cocoapods: default
@@ -22,7 +19,7 @@ workflows:
       - name: Instalar CocoaPods
         script: |
           cd ios && pod install
-      - name: Configurar Firma y Certificados Apple
+      - name: Obtener o Crear Certificados y Perfiles Apple
         script: |
           keychain initialize
           app-store-connect fetch-signing-files "com.equi.saludapp" \
@@ -30,19 +27,11 @@ workflows:
             --create
           keychain add-certificates
           xcode-project use-profiles
-      - name: Compilar App (.ipa)
+      - name: Compilar y Empaquetar IPA
         script: |
-          cd ios
-          xcodebuild -workspace Equi.xcworkspace \
-            -scheme Equi \
-            -configuration Release \
-            -archivePath build/Equi.xcarchive \
-            archive
-          
-          xcodebuild -exportArchive \
-            -archivePath build/Equi.xcarchive \
-            -exportOptionsPlist /Users/builder/export_options.plist \
-            -exportPath ../build/ios/ipa
+          xcode-project build-ipa \
+            --workspace "ios/Equi.xcworkspace" \
+            --scheme "Equi"
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
