@@ -1,14 +1,38 @@
-import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, FlatList, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, FlatList, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function MisCitasScreen({ misCitas, cancelarCita, irAHome }) {
+const API_MIS_CITAS = 'https://sistema.equi.com.pe/mis_citas.php';
+
+export default function MisCitasScreen({ usuarioId = 1, cancelarCita, irAHome }) {
+  const [citas, setCitas] = useState([]);
+  const [cargando, setCargando] = useState(true);
+
+  const cargarCitasEnVivo = async () => {
+    try {
+      const res = await fetch(`${API_MIS_CITAS}?usuario_id=${usuarioId}`);
+      const data = await res.json();
+      setCitas(Array.isArray(data) ? data : []);
+    } catch (e) {} finally {
+      setCargando(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarCitasEnVivo();
+    const interval = setInterval(cargarCitasEnVivo, 4000); // Sincroniza cada 4 segundos
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <View style={{ flex: 1, paddingBottom: 90 }}>
       <View style={styles.navbarSimple}>
         <Text style={styles.navbarTitle}>Mis Citas Programadas</Text>
       </View>
-      {misCitas.length === 0 ? (
+
+      {cargando ? (
+        <View style={styles.center}><ActivityIndicator size="large" color="#3B82F6" /></View>
+      ) : citas.length === 0 ? (
         <View style={styles.center}>
           <Ionicons name="calendar-outline" size={64} color="#D1D5DB" />
           <Text style={{ marginTop: 12, color: '#6B7280', fontSize: 16 }}>Aún no tienes citas agendadas.</Text>
@@ -18,7 +42,7 @@ export default function MisCitasScreen({ misCitas, cancelarCita, irAHome }) {
         </View>
       ) : (
         <FlatList
-          data={misCitas}
+          data={citas}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={{ padding: 16 }}
           renderItem={({ item }) => (
@@ -27,7 +51,11 @@ export default function MisCitasScreen({ misCitas, cancelarCita, irAHome }) {
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                   <Text style={styles.citaDoctor}>{item.profesional}</Text>
-                  <Text style={[styles.badgeEstadoText, item.estado === 'cancelada' ? { color: '#EF4444' } : { color: '#10B981' }]}>
+                  <Text style={[
+                    styles.badgeEstadoText, 
+                    item.estado === 'confirmada' ? { color: '#059669' } : 
+                    item.estado === 'cancelada' ? { color: '#EF4444' } : { color: '#D97706' }
+                  ]}>
                     {item.estado ? item.estado.toUpperCase() : 'PENDIENTE'}
                   </Text>
                 </View>
@@ -35,7 +63,7 @@ export default function MisCitasScreen({ misCitas, cancelarCita, irAHome }) {
                 
                 <View style={styles.citaFechaBadge}>
                   <Ionicons name="time-outline" size={14} color="#1E40AF" />
-                  <Text style={styles.citaFechaText}>{item.fecha} • {item.hora}</Text>
+                  <Text style={styles.citaFechaText}>{item.fecha_cita} • {item.hora_cita}</Text>
                 </View>
 
                 {item.estado !== 'cancelada' && (

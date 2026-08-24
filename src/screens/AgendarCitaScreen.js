@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, SafeAreaView, Platform, Alert } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, SafeAreaView, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+// Generar 5 fechas seguras de calendario sin etiquetas HTML
 const generarDiasSeguros = () => {
   const fechas = [];
   const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -21,8 +22,8 @@ const generarDiasSeguros = () => {
   return fechas;
 };
 
-// Horarios con su hora militar correspondiente
-const HORARIOS_DISPONIBLES = [
+// Horarios base sugeridos
+const HORARIOS_SUGERIDOS = [
   { label: '09:00 AM', hora24: 9 },
   { label: '11:00 AM', hora24: 11 },
   { label: '02:00 PM', hora24: 14 },
@@ -35,22 +36,21 @@ export default function AgendarCitaScreen({ volver, seleccionado, confirmarCita 
   const listaDias = generarDiasSeguros();
   const [diaElegido, setDiaElegido] = useState(listaDias[0].fechaTexto);
   const [esHoy, setEsHoy] = useState(true);
-  const [horaElegida, setHoraElegida] = useState('');
+  const [horaElegida, setHoraElegida] = useState('10:00 AM');
   const [modalidad, setModalidad] = useState('presencial');
 
-  // Filtrar horas pasadas si es hoy
+  // Filtrar horas que ya pasaron si el día seleccionado es hoy
   const horaActual = new Date().getHours();
-  const horasFiltradas = HORARIOS_DISPONIBLES.filter(h => !esHoy || h.hora24 > horaActual);
+  const horasFiltradas = HORARIOS_SUGERIDOS.filter(h => !esHoy || h.hora24 > horaActual);
 
   const seleccionarDia = (item) => {
     setDiaElegido(item.fechaTexto);
     setEsHoy(item.esHoy);
-    setHoraElegida(''); // Reiniciar hora al cambiar día
   };
 
   const handleConfirmar = () => {
-    if (!horaElegida) {
-      Alert.alert('Horario Requerido', 'Por favor selecciona una hora disponible.');
+    if (!horaElegida.trim()) {
+      Alert.alert('Horario Requerido', 'Por favor escribe o selecciona la hora de tu consulta.');
       return;
     }
     if (confirmarCita) {
@@ -68,6 +68,7 @@ export default function AgendarCitaScreen({ volver, seleccionado, confirmarCita 
       </View>
 
       <ScrollView style={{ padding: 20 }}>
+        {/* 1. SELECCIÓN DE DÍA */}
         <Text style={styles.label}>1. Elige el Día en el Calendario:</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.calendarioRow}>
           {listaDias.map((item, index) => {
@@ -86,28 +87,32 @@ export default function AgendarCitaScreen({ volver, seleccionado, confirmarCita 
           })}
         </ScrollView>
 
-        <Text style={[styles.label, { marginTop: 20 }]}>2. Horarios Disponibles:</Text>
-        {horasFiltradas.length === 0 ? (
-          <Text style={{ color: '#EF4444', fontSize: 13, marginVertical: 10 }}>
-            ⚠️ No quedan más turnos disponibles para hoy. Por favor elige otro día.
-          </Text>
-        ) : (
-          <View style={styles.chipsHoras}>
-            {horasFiltradas.map((h) => {
-              const activa = horaElegida === h.label;
-              return (
-                <TouchableOpacity 
-                  key={h.label} 
-                  style={[styles.chipHora, activa && styles.chipHoraActiva]} 
-                  onPress={() => setHoraElegida(h.label)}
-                >
-                  <Text style={[styles.chipHoraText, activa && styles.chipHoraTextActiva]}>{h.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
+        {/* 2. ESCRITURA Y SELECCIÓN DE HORA */}
+        <Text style={[styles.label, { marginTop: 20 }]}>2. Escribe o Elige la Hora Exacta:</Text>
+        <TextInput 
+          style={styles.inputHora} 
+          value={horaElegida} 
+          onChangeText={setHoraElegida} 
+          placeholder="Ej. 10:30 AM / 04:15 PM" 
+        />
+        
+        {/* Botones de sugerencia rápida */}
+        <View style={styles.chipsHoras}>
+          {horasFiltradas.map((h) => {
+            const activa = horaElegida === h.label;
+            return (
+              <TouchableOpacity 
+                key={h.label} 
+                style={[styles.chipHora, activa && styles.chipHoraActiva]} 
+                onPress={() => setHoraElegida(h.label)}
+              >
+                <Text style={[styles.chipHoraText, activa && styles.chipHoraTextActiva]}>{h.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
+        {/* 3. MODALIDAD */}
         <Text style={[styles.label, { marginTop: 20 }]}>3. Modalidad:</Text>
         <View style={styles.rowModalidad}>
           <TouchableOpacity style={[styles.chipMod, modalidad === 'presencial' && styles.chipModActivo]} onPress={() => setModalidad('presencial')}>
@@ -118,10 +123,11 @@ export default function AgendarCitaScreen({ volver, seleccionado, confirmarCita 
           </TouchableOpacity>
         </View>
 
+        {/* RESUMEN NATIVO SEGURO */}
         <View style={styles.resumenCard}>
           <Text style={styles.resumenTitulo}>Resumen de tu Consulta:</Text>
           <Text style={styles.resumenDetalle}>
-            📅 <Text style={{ fontWeight: 'bold' }}>{diaElegido}</Text> {horaElegida ? `a las ${horaElegida}` : '(Selecciona hora)'}
+            📅 <Text style={{ fontWeight: 'bold' }}>{diaElegido}</Text> a las <Text style={{ fontWeight: 'bold' }}>{horaElegida}</Text>
           </Text>
           <Text style={styles.resumenDetalle}>👨‍⚕️ {seleccionado?.nombre || 'Especialista'}</Text>
           <Text style={styles.resumenPrecio}>Total: S/. {seleccionado?.precio_consulta || '0.00'}</Text>
@@ -147,10 +153,11 @@ const styles = StyleSheet.create({
   diaNumero: { fontSize: 20, fontWeight: 'bold', color: '#111827', marginVertical: 4 },
   diaMes: { fontSize: 11, color: '#9CA3AF' },
   textoActivo: { color: '#fff' },
-  chipsHoras: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 },
-  chipHora: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#E2E8F0', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12 },
-  chipHoraActiva: { backgroundColor: '#3B82F6', borderColor: '#3B82F6' },
-  chipHoraText: { color: '#1E293B', fontWeight: 'bold', fontSize: 13 },
+  inputHora: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#D1D5DB', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, fontWeight: 'bold', color: '#111827' },
+  chipsHoras: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  chipHora: { backgroundColor: '#EFF6FF', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
+  chipHoraActiva: { backgroundColor: '#3B82F6' },
+  chipHoraText: { color: '#3B82F6', fontWeight: 'bold', fontSize: 12 },
   chipHoraTextActiva: { color: '#fff' },
   rowModalidad: { flexDirection: 'row', gap: 10 },
   chipMod: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: '#D1D5DB', alignItems: 'center' },

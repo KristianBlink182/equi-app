@@ -328,7 +328,13 @@ export default function App() {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" />
         {tabActual === 'HOME' && <HomeScreen usuario={usuario} buscarProfesionales={buscarProfesionales} />}
-        {tabActual === 'CITAS' && <MisCitasScreen misCitas={misCitas} cancelarCita={cancelarCitaPaciente} irAHome={() => setTabActual('HOME')} />}
+        {tabActual === 'CITAS' && (
+  <MisCitasScreen 
+    usuarioId={usuario?.id || 1} 
+    cancelarCita={cancelarCitaPaciente} 
+    irAHome={() => setTabActual('HOME')} 
+  />
+)}
         {tabActual === 'CUENTA' && (
           <MiCuentaScreen 
             usuario={usuario} 
