@@ -2,30 +2,36 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, SafeAreaView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-// Generar 5 fechas reales de calendario consecutivas
-const generarDiasCalendario = () => {
+// Generar 5 fechas seguras sin etiquetas HTML
+const generarDiasSeguros = () => {
   const fechas = [];
-  const nombresDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-  const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
   for (let i = 0; i < 5; i++) {
     const d = new Date();
     d.setDate(d.getDate() + i);
     fechas.push({
-      diaSemana: nombresDias[d.getDay()],
+      diaSemana: diasSemana[d.getDay()],
       diaNumero: d.getDate(),
-      mes: nombresMeses[d.getMonth()],
-      fechaCompleta: `${d.getDate()} de ${nombresMeses[d.getMonth()]} de ${d.getFullYear()}`
+      mes: meses[d.getMonth()],
+      fechaTexto: `${d.getDate()} de ${meses[d.getMonth()]}`
     });
   }
   return fechas;
 };
 
 export default function AgendarCitaScreen({ volver, seleccionado, confirmarCita }) {
-  const dias = generarDiasCalendario();
-  const [diaSeleccionado, setDiaSeleccionado] = useState(dias[0].fechaCompleta);
-  const [horaTexto, setHoraTexto] = useState('10:00 AM');
+  const listaDias = generarDiasSeguros();
+  const [diaElegido, setDiaElegido] = useState(listaDias[0].fechaTexto);
+  const [horaElegida, setHoraElegida] = useState('10:00 AM');
   const [modalidad, setModalidad] = useState('presencial');
+
+  const handleConfirmar = () => {
+    if (confirmarCita) {
+      confirmarCita(diaElegido, horaElegida, modalidad);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -39,13 +45,13 @@ export default function AgendarCitaScreen({ volver, seleccionado, confirmarCita 
       <ScrollView style={{ padding: 20 }}>
         <Text style={styles.label}>1. Elige el Día en el Calendario:</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.calendarioRow}>
-          {dias.map((item, index) => {
-            const activo = diaSeleccionado === item.fechaCompleta;
+          {listaDias.map((item, index) => {
+            const activo = diaElegido === item.fechaTexto;
             return (
               <TouchableOpacity 
                 key={index} 
                 style={[styles.diaCard, activo && styles.diaCardActivo]}
-                onPress={() => setDiaSeleccionado(item.fechaCompleta)}
+                onPress={() => setDiaElegido(item.fechaTexto)}
               >
                 <Text style={[styles.diaSemana, activo && styles.textoActivo]}>{item.diaSemana}</Text>
                 <Text style={[styles.diaNumero, activo && styles.textoActivo]}>{item.diaNumero}</Text>
@@ -55,16 +61,16 @@ export default function AgendarCitaScreen({ volver, seleccionado, confirmarCita 
           })}
         </ScrollView>
 
-        <Text style={[styles.label, { marginTop: 20 }]}>2. Escribe o Selecciona la Hora:</Text>
+        <Text style={[styles.label, { marginTop: 20 }]}>2. Escribe o Elige la Hora:</Text>
         <TextInput 
           style={styles.inputHora} 
-          value={horaTexto} 
-          onChangeText={setHoraTexto} 
+          value={horaElegida} 
+          onChangeText={setHoraElegida} 
           placeholder="Ej. 10:30 AM / 04:00 PM" 
         />
         <View style={styles.chipsHoras}>
           {['09:00 AM', '11:00 AM', '03:30 PM', '05:00 PM', '06:30 PM'].map((h) => (
-            <TouchableOpacity key={h} style={styles.chipHora} onPress={() => setHoraTexto(h)}>
+            <TouchableOpacity key={h} style={styles.chipHora} onPress={() => setHoraElegida(h)}>
               <Text style={styles.chipHoraText}>{h}</Text>
             </TouchableOpacity>
           ))}
@@ -80,14 +86,17 @@ export default function AgendarCitaScreen({ volver, seleccionado, confirmarCita 
           </TouchableOpacity>
         </View>
 
+        {/* Resumen 100% nativo sin etiquetas HTML */}
         <View style={styles.resumenCard}>
           <Text style={styles.resumenTitulo}>Resumen de tu Consulta:</Text>
-          <Text style={styles.resumenDetalle}>📅 <strong>{diaSeleccionado}</strong> a las <strong>{horaTexto}</strong></Text>
-          <Text style={styles.resumenDetalle}>👨‍⚕️ {seleccionado.nombre}</Text>
-          <Text style={styles.resumenPrecio}>Total: S/. {seleccionado.precio_consulta}</Text>
+          <Text style={styles.resumenDetalle}>
+            📅 <Text style={{ fontWeight: 'bold' }}>{diaElegido}</Text> a las <Text style={{ fontWeight: 'bold' }}>{horaElegida}</Text>
+          </Text>
+          <Text style={styles.resumenDetalle}>👨‍⚕️ {seleccionado?.nombre || 'Especialista'}</Text>
+          <Text style={styles.resumenPrecio}>Total: S/. {seleccionado?.precio_consulta || '0.00'}</Text>
         </View>
 
-        <TouchableOpacity style={styles.btnConfirmar} onPress={() => confirmarCita(diaSeleccionado, horaTexto, modalidad)}>
+        <TouchableOpacity style={styles.btnConfirmar} onPress={handleConfirmar}>
           <Text style={styles.btnConfirmarText}>Confirmar Cita & Recordatorio</Text>
         </TouchableOpacity>
       </ScrollView>
