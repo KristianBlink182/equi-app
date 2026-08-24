@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, Alert, Linking, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 
-const API_CITAS_DOC = 'http://192.168.0.55/salud-api/citas_doctor.php';
+// URL OFICIAL DE PRODUCCIÓN
+const API_CITAS_DOC = 'https://sistema.equi.com.pe/citas_doctor.php';
 
-export default function PanelDoctorScreen({ volver, doctorId = 1, doctorNombre = "Dra. Laura Morales" }) {
+export default function PanelDoctorScreen({ volver, doctorId = 1, doctorNombre = "Especialista Equi" }) {
   const [citas, setCitas] = useState([]);
   const [cargando, setCargando] = useState(true);
 
@@ -13,9 +14,9 @@ export default function PanelDoctorScreen({ volver, doctorId = 1, doctorNombre =
     try {
       const res = await fetch(`${API_CITAS_DOC}?accion=listar&doctor_id=${doctorId}`);
       const data = await res.json();
-      setCitas(data);
+      setCitas(Array.isArray(data) ? data : []);
     } catch (e) {
-      Alert.alert('Error', 'No se pudieron cargar las citas del especialista.');
+      Alert.alert('Aviso', 'No se pudieron sincronizar las citas.');
     } finally {
       setCargando(false);
     }
@@ -34,17 +35,19 @@ export default function PanelDoctorScreen({ volver, doctorId = 1, doctorNombre =
       });
       const data = await res.json();
       if (data.status === 'success') {
-        Alert.alert('¡Actualizado!', `La cita ha sido marcada como ${nuevoEstado.toUpperCase()}.`);
         cargarCitas();
       }
-    } catch (e) {
-      Alert.alert('Error', 'No se pudo actualizar el estado.');
-    }
+    } catch (e) {}
   };
 
   const contactarPaciente = (telefono, nombre) => {
+    if (!telefono) {
+      Alert.alert('Atención', 'El paciente no registró un número de teléfono.');
+      return;
+    }
+    const telLimpio = telefono.replace(/[^0-9]/g, '');
     const msg = `Hola ${nombre}, te saluda tu especialista de Equi para coordinar nuestra sesión.`;
-    Linking.openURL(`whatsapp://send?phone=${telefono}&text=${encodeURI(msg)}`);
+    Linking.openURL(`whatsapp://send?phone=${telLimpio}&text=${encodeURI(msg)}`);
   };
 
   return (
@@ -101,7 +104,7 @@ export default function PanelDoctorScreen({ volver, doctorId = 1, doctorNombre =
 
                 <View style={styles.infoRow}>
                   <Ionicons name="time" size={16} color="#3B82F6" />
-                  <Text style={styles.infoText}>Horario: <Text style={{ fontWeight: 'bold' }}>{item.fecha_cita} a las {item.hora_cita}</Text></Text>
+                  <Text style={styles.infoText}>Horario: <Text style={{ fontWeight: 'bold' }}>{item.fecha_cita} • {item.hora_cita}</Text></Text>
                 </View>
 
                 <View style={styles.infoRow}>
@@ -146,16 +149,7 @@ export default function PanelDoctorScreen({ volver, doctorId = 1, doctorNombre =
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#fff' },
-  navbar: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 16, 
-    paddingTop: Platform.OS === 'ios' ? 12 : 20, 
-    paddingBottom: 14, 
-    borderBottomWidth: 1, 
-    borderColor: '#E5E7EB',
-    backgroundColor: '#fff' 
-  },
+  navbar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 12 : 20, paddingBottom: 14, borderBottomWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#fff' },
   btnVolver: { padding: 6, marginRight: 10 },
   navbarTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
   navbarSub: { fontSize: 12, color: '#3B82F6', fontWeight: '500' },

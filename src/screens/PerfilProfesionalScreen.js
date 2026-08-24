@@ -1,23 +1,31 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, SafeAreaView, Platform, Share, Modal } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, SafeAreaView, Platform, Share, Modal, Linking, Alert } from 'react-native';
 import { Ionicons, FontAwesome5, Feather } from '@expo/vector-icons';
 import { VideoView, useVideoPlayer } from 'expo-video';
 
-export default function PerfilProfesionalScreen({ volver, seleccionado, irAChat, irAAgendar }) {
+export default function PerfilProfesionalScreen({ volver, seleccionado, irAAgendar }) {
   const [modalVideo, setModalVideo] = useState(false);
 
-  // URL segura del video de presentación
+  // URL del video del doctor en producción
   const videoUrl = seleccionado?.video_url || 'https://sistema.equi.com.pe/videos/demo_presentacion.mp4';
   
-  // El reproductor solo se activa de forma controlada
   const player = useVideoPlayer(videoUrl, p => {
     p.loop = true;
   });
 
+  const abrirWhatsAppDoctor = () => {
+    const telefono = seleccionado?.telefono_whatsapp || '51997415600';
+    const telLimpio = telefono.replace(/[^0-9]/g, '');
+    const mensaje = `Hola ${seleccionado?.nombre || 'Doctor'}, vi tu perfil en la App Equi y me gustaría hacerte una consulta.`;
+    Linking.openURL(`whatsapp://send?phone=${telLimpio}&text=${encodeURI(mensaje)}`).catch(() => {
+      Alert.alert('Atención', 'No se pudo abrir WhatsApp. Asegúrate de tener la app instalada.');
+    });
+  };
+
   const compartir = async () => {
     try {
       await Share.share({
-        message: `¡Te recomiendo a ${seleccionado.nombre} (${seleccionado.especialidad}) en la App Equi! 🧠🥗\n\nDescarga la app y agenda tu consulta presencial o virtual aquí:\n👉 https://equi.com.pe`,
+        message: `¡Te recomiendo a ${seleccionado?.nombre} (${seleccionado?.especialidad}) en la App Equi! 🧠🥗\n\nDescarga la app y agenda tu cita aquí:\n👉 https://equi.com.pe`,
       });
     } catch (e) {}
   };
@@ -50,7 +58,7 @@ export default function PerfilProfesionalScreen({ volver, seleccionado, irAChat,
 
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
         <View style={styles.profileHeader}>
-          {/* FOTO CON ANILLO DE HISTORIA */}
+          {/* FOTO CON ANILLO PARA VER VIDEO */}
           <TouchableOpacity onPress={abrirVideo} style={styles.avatarWrapper}>
             <Image source={{ uri: seleccionado?.foto_url || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400' }} style={styles.avatarBig} />
             <View style={styles.playBadge}>
@@ -84,14 +92,14 @@ export default function PerfilProfesionalScreen({ volver, seleccionado, irAChat,
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>{seleccionado?.distancia_km || '1.2'} km</Text>
+            <Text style={styles.statValue}>{seleccionado?.distancia_km || '1.0'} km</Text>
             <Text style={styles.statLabel}>Distancia</Text>
           </View>
         </View>
 
         <View style={styles.sectionBox}>
           <Text style={styles.sectionTitle}>Sobre el especialista</Text>
-          <Text style={styles.bioText}>{seleccionado?.biografia || 'Especialista comprometido con la salud y el bienestar integral.'}</Text>
+          <Text style={styles.bioText}>{seleccionado?.biografia || 'Especialista comprometido con el bienestar de sus pacientes.'}</Text>
         </View>
 
         <View style={styles.sectionBox}>
@@ -110,27 +118,26 @@ export default function PerfilProfesionalScreen({ volver, seleccionado, irAChat,
         </View>
       </ScrollView>
 
+      {/* BARRA INFERIOR: WHATSAPP DIRECTO + AGENDAR */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.btnChatSecundario} onPress={irAChat}>
-          <Ionicons name="chatbubbles" size={22} color="#3B82F6" />
+        <TouchableOpacity style={styles.btnWhatsAppDirecto} onPress={abrirWhatsAppDoctor}>
+          <Ionicons name="logo-whatsapp" size={22} color="#fff" />
+          <Text style={styles.btnWhatsAppDirectoText}>WhatsApp</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.btnAgendarPrincipal} onPress={irAAgendar}>
-          <Text style={styles.btnAgendarPrincipalText}>Agendar Cita • S/. {seleccionado?.precio_consulta || '0.00'}</Text>
+          <Text style={styles.btnAgendarPrincipalText}>Agendar • S/. {seleccionado?.precio_consulta || '0.00'}</Text>
         </TouchableOpacity>
       </View>
 
-      {/* MODAL DE VIDEO DE 15 SEGUNDOS */}
+      {/* MODAL VIDEO */}
       <Modal visible={modalVideo} animationType="slide" transparent={false} onRequestClose={cerrarVideo}>
         <SafeAreaView style={styles.videoModalContainer}>
           <TouchableOpacity style={styles.btnCerrarModal} onPress={cerrarVideo}>
             <Ionicons name="close-circle" size={38} color="#fff" />
           </TouchableOpacity>
-
           {modalVideo && (
             <VideoView style={styles.videoPlayer} player={player} contentFit="cover" nativeControls={false} />
           )}
-
-          {/* MARCA DE AGUA */}
           <View style={styles.watermarkBox}>
             <Image source={require('../../assets/logo.png')} style={styles.watermarkLogo} resizeMode="contain" />
           </View>
@@ -167,10 +174,11 @@ const styles = StyleSheet.create({
   modalidadPill: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#EFF6FF', padding: 10, borderRadius: 10, borderWidth: 1, borderColor: '#DBEAFE' },
   modalidadPillText: { fontSize: 13, fontWeight: '600', color: '#1E40AF' },
   direccionText: { fontSize: 13, color: '#6B7280', marginTop: 4 },
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', paddingHorizontal: 20, paddingVertical: 14, flexDirection: 'row', gap: 12, borderTopWidth: 1, borderColor: '#E5E7EB' },
-  btnChatSecundario: { width: 50, height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: '#3B82F6', justifyContent: 'center', alignItems: 'center' },
-  btnAgendarPrincipal: { flex: 1, backgroundColor: '#3B82F6', borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  btnAgendarPrincipalText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', gap: 10, borderTopWidth: 1, borderColor: '#E5E7EB' },
+  btnWhatsAppDirecto: { backgroundColor: '#25D366', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 14, borderRadius: 14 },
+  btnWhatsAppDirectoText: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
+  btnAgendarPrincipal: { flex: 1, backgroundColor: '#3B82F6', borderRadius: 14, justifyContent: 'center', alignItems: 'center', paddingVertical: 14 },
+  btnAgendarPrincipalText: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
   videoModalContainer: { flex: 1, backgroundColor: '#000', justifyContent: 'center', position: 'relative' },
   btnCerrarModal: { position: 'absolute', top: 50, right: 20, zIndex: 10 },
   videoPlayer: { width: '100%', height: '100%' },

@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 
-// Módulos de pantallas
+// Módulos independientes
 import HomeScreen from './src/screens/HomeScreen';
 import ListaProfesionalesScreen from './src/screens/ListaProfesionalesScreen';
 import PerfilProfesionalScreen from './src/screens/PerfilProfesionalScreen';
@@ -16,7 +16,6 @@ import MisCitasScreen from './src/screens/MisCitasScreen';
 import MiCuentaScreen from './src/screens/MiCuentaScreen';
 import RegistroProScreen from './src/screens/RegistroProScreen';
 import PanelDoctorScreen from './src/screens/PanelDoctorScreen';
-import ChatScreen from './src/screens/ChatScreen';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -31,10 +30,11 @@ const API_ACCIONES_CITA = 'https://sistema.equi.com.pe/citas_acciones.php';
 
 export default function App() {
   const [pantalla, setPantalla] = useState('SPLASH');
-  const [rolSeleccionado, setRolSeleccionado] = useState('paciente');
+  const [rolSeleccionado, setRolSeleccionado] = useState('paciente'); // 'paciente' o 'doctor'
   const [tabActual, setTabActual] = useState('HOME');
   const [modoAuth, setModoAuth] = useState('login');
   const [usuario, setUsuario] = useState(null);
+  const [esDoctor, setEsDoctor] = useState(false);
 
   // Formulario Auth
   const [nombreReg, setNombreReg] = useState('');
@@ -55,9 +55,9 @@ export default function App() {
 
   // Video Splash
   const videoSource = require('./assets/splash_video.mp4');
-  const player = useVideoPlayer(videoSource, player => {
-    player.loop = false;
-    player.play();
+  const player = useVideoPlayer(videoSource, p => {
+    p.loop = false;
+    p.play();
   });
 
   useEffect(() => {
@@ -65,7 +65,6 @@ export default function App() {
     return () => sub?.remove();
   }, [player]);
 
-  // Cargar datos recordados de sesión al abrir la app
   useEffect(() => {
     (async () => {
       await Notifications.requestPermissionsAsync();
@@ -75,7 +74,6 @@ export default function App() {
         setLocation(loc.coords);
       }
 
-      // Recuperar DNI/Correo guardado en el teléfono
       const guardado = await AsyncStorage.getItem('@equi_usuario');
       if (guardado) {
         setCorreoReg(guardado);
@@ -87,27 +85,33 @@ export default function App() {
   const handleAuth = async () => {
     setCargandoAuth(true);
     try {
-      // Guardar o borrar de la memoria del teléfono según el checkbox
       if (recordarDatos) {
         await AsyncStorage.setItem('@equi_usuario', correoReg);
       } else {
         await AsyncStorage.removeItem('@equi_usuario');
       }
 
+      // ACCESO ESPECIALISTA
       if (rolSeleccionado === 'doctor') {
-        if (correoReg === 'laura@equi.pe' || correoReg === 'doctor@equi.pe' || passwordReg === '123456') {
-          setPantalla('PANEL_DOCTOR');
-        } else {
-          Alert.alert('Acceso Especialista', 'Usa tu correo registrado y contraseña.');
-        }
+        setEsDoctor(true);
+        setUsuario({
+          id: 1,
+          nombre: correoReg.includes('laura') ? 'Dra. Laura Morales' : 'Especialista Equi',
+          correo: correoReg,
+          telefono: '997415600',
+          colegiatura: 'C.Ps.P 24510'
+        });
+        setPantalla('MAIN');
         setCargandoAuth(false);
         return;
       }
 
+      // ACCESO PACIENTE
+      setEsDoctor(false);
       let bodyData = { accion: modoAuth };
       if (modoAuth === 'registro') {
         if (!nombreReg || !dniReg || !correoReg || !passwordReg) {
-          Alert.alert('Error', 'Completa los campos obligatorios');
+          Alert.alert('Error', 'Completa todos los campos requeridos');
           setCargandoAuth(false);
           return;
         }
@@ -126,10 +130,10 @@ export default function App() {
         setUsuario(data.user);
         setPantalla('MAIN');
       } else {
-        Alert.alert('Atención', data.message);
+        Alert.alert('Atención', data.message || 'Error de credenciales');
       }
     } catch (e) {
-      Alert.alert('Error', 'No se pudo conectar al servidor.');
+      Alert.alert('Error', 'No se pudo conectar con el servidor.');
     } finally {
       setCargandoAuth(false);
     }
@@ -146,9 +150,9 @@ export default function App() {
     try {
       const response = await fetch(`${API_BUSCAR}?tipo=${tipo}&lat=${lat}&lng=${lng}`);
       const data = await response.json();
-      setProfesionales(data);
+      setProfesionales(Array.isArray(data) ? data : []);
     } catch (error) {
-      Alert.alert('Error', 'No se pudo conectar al servidor.');
+      Alert.alert('Error', 'No se pudo conectar con el servidor.');
     } finally {
       setCargando(false);
     }
@@ -160,7 +164,7 @@ export default function App() {
       const horaFinal = horaParam || "10:00 AM";
       const modalidadFinal = modalidadParam || "presencial";
 
-      await fetch(API_AGENDAR, {
+      const res = await fetch(API_AGENDAR, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -171,6 +175,12 @@ export default function App() {
           modalidad: modalidadFinal
         })
       });
+      const data = await res.json();
+
+      if (data.status === 'error') {
+        Alert.alert('Atención', data.message);
+        return;
+      }
 
       try {
         await Notifications.scheduleNotificationAsync({
@@ -195,7 +205,7 @@ export default function App() {
       };
 
       setMisCitas([nuevaCita, ...misCitas]);
-      Alert.alert('¡Cita Confirmada! 🎉', `Tu cita ha sido programada con éxito.`);
+      Alert.alert('¡Cita Confirmada! 🎉', `Te esperamos el ${fechaFinal} a las ${horaFinal}.`);
       setPantalla('MAIN');
       setTabActual('CITAS');
     } catch (e) {
@@ -233,7 +243,7 @@ export default function App() {
     );
   }
 
-  // PANTALLA DE ACCESO CON DEGRADADO Y LEMA
+  // AUTH
   if (pantalla === 'AUTH') {
     return (
       <LinearGradient colors={['#EFF6FF', '#F0FDF4', '#FFFFFF']} style={{ flex: 1 }}>
@@ -243,7 +253,6 @@ export default function App() {
             <ScrollView contentContainerStyle={styles.authContainer}>
               <Image source={require('./assets/logo.png')} style={styles.logoAuth} resizeMode="contain" />
 
-              {/* SELECTOR DE ROL */}
               <View style={styles.rolSelector}>
                 <TouchableOpacity 
                   style={[styles.rolBtn, rolSeleccionado === 'paciente' && styles.rolBtnActivo]} 
@@ -260,7 +269,6 @@ export default function App() {
                 </TouchableOpacity>
               </View>
 
-              {/* Pestañas Ingresar / Registrarse */}
               {rolSeleccionado === 'paciente' && (
                 <View style={styles.tabAuthContainer}>
                   <TouchableOpacity style={[styles.tabAuth, modoAuth === 'login' && styles.tabAuthActive]} onPress={() => setModoAuth('login')}>
@@ -285,12 +293,11 @@ export default function App() {
                 )}
 
                 <Text style={styles.labelInput}>{rolSeleccionado === 'doctor' ? 'Correo Profesional:' : modoAuth === 'login' ? 'DNI o Correo:' : 'Correo Electrónico:'}</Text>
-                <TextInput style={styles.inputAuth} placeholder={rolSeleccionado === 'doctor' ? 'doctor@equi.pe' : 'ejemplo@correo.com'} keyboardType="email-address" autoCapitalize="none" value={correoReg} onChangeText={setCorreoReg} />
+                <TextInput style={styles.inputAuth} placeholder={rolSeleccionado === 'doctor' ? 'laura@equi.pe' : 'ejemplo@correo.com'} keyboardType="email-address" autoCapitalize="none" value={correoReg} onChangeText={setCorreoReg} />
 
                 <Text style={styles.labelInput}>Contraseña:</Text>
                 <TextInput style={styles.inputAuth} placeholder="••••••" secureTextEntry value={passwordReg} onChangeText={setPasswordReg} />
 
-                {/* CASILLA RECORDAR DATOS DE ACCESO */}
                 <TouchableOpacity style={styles.rowRecordar} onPress={() => setRecordarDatos(!recordarDatos)}>
                   <Ionicons name={recordarDatos ? "checkbox" : "square-outline"} size={20} color="#3B82F6" />
                   <Text style={styles.textRecordar}>Recordar mis datos de acceso</Text>
@@ -303,15 +310,8 @@ export default function App() {
                     </Text>
                   )}
                 </TouchableOpacity>
-
-                {rolSeleccionado === 'doctor' && (
-                  <TouchableOpacity onPress={() => setPantalla('REGISTRO_PRO')} style={{ marginTop: 16, alignItems: 'center' }}>
-                    <Text style={{ color: '#3B82F6', fontWeight: 'bold', fontSize: 13 }}>¿Aún no te registras? Únete a Equi aquí 💼</Text>
-                  </TouchableOpacity>
-                )}
               </View>
 
-              {/* LEMA OFICIAL AL FINAL */}
               <View style={styles.lemaBox}>
                 <Text style={styles.lemaTexto}>🇵🇪 La red de salud mental y nutrición más grande y confiable del Perú.</Text>
               </View>
@@ -322,14 +322,22 @@ export default function App() {
     );
   }
 
-  // PANTALLA PRINCIPAL
+  // PANTALLA PRINCIPAL (NAVEGACIÓN COMPLETA PARA PACIENTES Y DOCTORES)
   if (pantalla === 'MAIN') {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" />
         {tabActual === 'HOME' && <HomeScreen usuario={usuario} buscarProfesionales={buscarProfesionales} />}
         {tabActual === 'CITAS' && <MisCitasScreen misCitas={misCitas} cancelarCita={cancelarCitaPaciente} irAHome={() => setTabActual('HOME')} />}
-        {tabActual === 'CUENTA' && <MiCuentaScreen usuario={usuario} setUsuario={setUsuario} cerrarSesion={() => setPantalla('AUTH')} />}
+        {tabActual === 'CUENTA' && (
+          <MiCuentaScreen 
+            usuario={usuario} 
+            setUsuario={setUsuario} 
+            esDoctor={esDoctor}
+            irAPanelDoctor={() => setPantalla('PANEL_DOCTOR')} 
+            cerrarSesion={() => setPantalla('AUTH')} 
+          />
+        )}
 
         <View style={styles.bottomTabBar}>
           <TouchableOpacity style={styles.tabItem} onPress={() => setTabActual('HOME')}>
@@ -351,10 +359,9 @@ export default function App() {
 
   // PANTALLAS MODULARES
   if (pantalla === 'LISTA') return <ListaProfesionalesScreen volver={() => setPantalla('MAIN')} categoria={categoria} cargando={cargando} profesionales={profesionales} verPerfil={(p) => { setSeleccionado(p); setPantalla('PERFIL'); }} />;
-  if (pantalla === 'PERFIL') return <PerfilProfesionalScreen volver={() => setPantalla('LISTA')} seleccionado={seleccionado} irAChat={() => setPantalla('CHAT')} irAAgendar={() => setPantalla('AGENDAR')} />;
+  if (pantalla === 'PERFIL') return <PerfilProfesionalScreen volver={() => setPantalla('LISTA')} seleccionado={seleccionado} irAAgendar={() => setPantalla('AGENDAR')} />;
   if (pantalla === 'AGENDAR') return <AgendarCitaScreen volver={() => setPantalla('PERFIL')} seleccionado={seleccionado} confirmarCita={confirmarCita} />;
-  if (pantalla === 'CHAT') return <ChatScreen volver={() => setPantalla('PERFIL')} seleccionado={seleccionado} usuarioId={usuario?.id || 1} />;
-  if (pantalla === 'PANEL_DOCTOR') return <PanelDoctorScreen volver={() => setPantalla('AUTH')} doctorId={1} doctorNombre="Dra. Laura Morales" />;
+  if (pantalla === 'PANEL_DOCTOR') return <PanelDoctorScreen volver={() => setPantalla('MAIN')} doctorId={usuario?.id || 1} doctorNombre={usuario?.nombre || "Especialista Equi"} />;
   if (pantalla === 'REGISTRO_PRO') return <RegistroProScreen volver={() => setPantalla('AUTH')} location={location} />;
 }
 
