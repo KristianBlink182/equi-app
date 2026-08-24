@@ -154,46 +154,52 @@ export default function App() {
     }
   };
 
-  const confirmarCita = async (fecha, hora, modalidad) => {
+  const confirmarCita = async (fechaParam, horaParam, modalidadParam) => {
     try {
+      const fechaFinal = fechaParam || "Fecha por coordinar";
+      const horaFinal = horaParam || "10:00 AM";
+      const modalidadFinal = modalidadParam || "presencial";
+
       await fetch(API_AGENDAR, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           usuario_id: usuario?.id || 1,
           profesional_id: seleccionado.id,
-          fecha,
-          hora,
-          modalidad
+          fecha: fechaFinal,
+          hora: horaFinal,
+          modalidad: modalidadFinal
         })
       });
 
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '🔔 Recordatorio Equi',
-          body: `Tu cita con ${seleccionado.nombre} está programada para el ${fecha} a las ${hora}.`,
-        },
-        trigger: { seconds: 5 },
-      });
+      try {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '🔔 Recordatorio Equi',
+            body: `Tu cita con ${seleccionado.nombre} está programada para el ${fechaFinal} a las ${horaFinal}.`,
+          },
+          trigger: null,
+        });
+      } catch (notifErr) {}
 
       const nuevaCita = {
         id: Date.now().toString(),
         profesional: seleccionado.nombre,
         especialidad: seleccionado.especialidad,
         foto: seleccionado.foto_url,
-        fecha,
-        hora,
-        modalidad,
+        fecha: fechaFinal,
+        hora: horaFinal,
+        modalidad: modalidadFinal,
         precio: seleccionado.precio_consulta,
         estado: 'pendiente'
       };
 
       setMisCitas([nuevaCita, ...misCitas]);
-      Alert.alert('¡Cita Confirmada! 🎉', `Te esperamos el ${fecha} a las ${hora}.`);
+      Alert.alert('¡Cita Confirmada! 🎉', `Tu cita ha sido programada con éxito.`);
       setPantalla('MAIN');
       setTabActual('CITAS');
     } catch (e) {
-      Alert.alert('Error', 'No se pudo agendar.');
+      Alert.alert('Error', 'No se pudo agendar la consulta.');
     }
   };
 

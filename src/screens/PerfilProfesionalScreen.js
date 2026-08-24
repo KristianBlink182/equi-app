@@ -1,14 +1,34 @@
-import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, SafeAreaView, Platform, Share } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, SafeAreaView, Platform, Share, Modal } from 'react-native';
 import { Ionicons, FontAwesome5, Feather } from '@expo/vector-icons';
+import { VideoView, useVideoPlayer } from 'expo-video';
 
 export default function PerfilProfesionalScreen({ volver, seleccionado, irAChat, irAAgendar }) {
+  const [modalVideo, setModalVideo] = useState(false);
+
+  // Reproductor del Video de Presentación
+  const videoUrl = seleccionado?.video_url || 'https://sistema.equi.com.pe/videos/demo_presentacion.mp4';
+  const player = useVideoPlayer(videoUrl, p => {
+    p.loop = true;
+    if (modalVideo) p.play();
+  });
+
   const compartir = async () => {
     try {
       await Share.share({
-        message: `¡Te recomiendo a ${seleccionado.nombre} (${seleccionado.especialidad}) en la App Equi!`,
+        message: `¡Te recomiendo a ${seleccionado.nombre} (${seleccionado.especialidad}) en la App Equi! 🧠🥗\n\nDescarga la app y agenda tu cita presencial o virtual aquí:\n👉 https://equi.com.pe`,
       });
     } catch (e) {}
+  };
+
+  const abrirVideo = () => {
+    setModalVideo(true);
+    player.play();
+  };
+
+  const cerrarVideo = () => {
+    player.pause();
+    setModalVideo(false);
   };
 
   return (
@@ -25,7 +45,19 @@ export default function PerfilProfesionalScreen({ volver, seleccionado, irAChat,
 
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
         <View style={styles.profileHeader}>
-          <Image source={{ uri: seleccionado.foto_url || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400' }} style={styles.avatarBig} />
+          {/* FOTO CON ANILLO DE HISTORIA PARA VER VIDEO */}
+          <TouchableOpacity onPress={abrirVideo} style={styles.avatarWrapper}>
+            <Image source={{ uri: seleccionado.foto_url || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400' }} style={styles.avatarBig} />
+            <View style={styles.playBadge}>
+              <Ionicons name="play" size={14} color="#fff" />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={abrirVideo} style={styles.btnVerVideo}>
+            <Ionicons name="videocam" size={16} color="#3B82F6" />
+            <Text style={styles.btnVerVideoText}>Ver Presentación (15s) 🎬</Text>
+          </TouchableOpacity>
+
           <View style={styles.verifiedBadge}>
             <Ionicons name="checkmark-circle" size={18} color="#3B82F6" />
             <Text style={styles.verifiedText}>Especialista Verificado por Equi</Text>
@@ -81,6 +113,22 @@ export default function PerfilProfesionalScreen({ volver, seleccionado, irAChat,
           <Text style={styles.btnAgendarPrincipalText}>Agendar Cita • S/. {seleccionado.precio_consulta}</Text>
         </TouchableOpacity>
       </View>
+
+      {/* MODAL DE VIDEO DE 15 SEGUNDOS CON MARCA DE AGUA */}
+      <Modal visible={modalVideo} animationType="slide" transparent={false}>
+        <SafeAreaView style={styles.videoModalContainer}>
+          <TouchableOpacity style={styles.btnCerrarModal} onPress={cerrarVideo}>
+            <Ionicons name="close-circle" size={36} color="#fff" />
+          </TouchableOpacity>
+
+          <VideoView style={styles.videoPlayer} player={player} contentFit="cover" nativeControls={false} />
+
+          {/* MARCA DE AGUA EQUI EN LA ESQUINA INFERIOR DERECHA */}
+          <View style={styles.watermarkBox}>
+            <Image source={require('../../assets/logo.png')} style={styles.watermarkLogo} resizeMode="contain" />
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -90,7 +138,11 @@ const styles = StyleSheet.create({
   navbar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 12 : 20, paddingBottom: 14, borderBottomWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#fff' },
   navbarTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
   profileHeader: { alignItems: 'center', padding: 20, backgroundColor: '#fff' },
-  avatarBig: { width: 110, height: 110, borderRadius: 55, marginBottom: 10 },
+  avatarWrapper: { position: 'relative', padding: 4, borderRadius: 65, borderWidth: 3, borderColor: '#3B82F6' },
+  avatarBig: { width: 110, height: 110, borderRadius: 55 },
+  playBadge: { position: 'absolute', bottom: 4, right: 4, backgroundColor: '#3B82F6', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
+  btnVerVideo: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#EFF6FF', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, marginTop: 10, marginBottom: 8 },
+  btnVerVideoText: { color: '#1D4ED8', fontSize: 13, fontWeight: 'bold' },
   verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginBottom: 8 },
   verifiedText: { fontSize: 12, color: '#1D4ED8', fontWeight: '600' },
   perfilNombre: { fontSize: 22, fontWeight: 'bold', color: '#111827' },
@@ -111,5 +163,10 @@ const styles = StyleSheet.create({
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', paddingHorizontal: 20, paddingVertical: 14, flexDirection: 'row', gap: 12, borderTopWidth: 1, borderColor: '#E5E7EB' },
   btnChatSecundario: { width: 50, height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: '#3B82F6', justifyContent: 'center', alignItems: 'center' },
   btnAgendarPrincipal: { flex: 1, backgroundColor: '#3B82F6', borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  btnAgendarPrincipalText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
+  btnAgendarPrincipalText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  videoModalContainer: { flex: 1, backgroundColor: '#000', justifyContent: 'center', position: 'relative' },
+  btnCerrarModal: { position: 'absolute', top: 50, right: 20, zIndex: 10 },
+  videoPlayer: { width: '100%', height: '100%' },
+  watermarkBox: { position: 'absolute', bottom: 40, right: 20, opacity: 0.8 },
+  watermarkLogo: { width: 100, height: 40 }
 });
