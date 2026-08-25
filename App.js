@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
+import PerfilDoctorEditarScreen from './src/screens/PerfilDoctorEditarScreen';
 
 // Módulos independientes
 import HomeScreen from './src/screens/HomeScreen';
@@ -336,14 +337,15 @@ export default function App() {
   />
 )}
         {tabActual === 'CUENTA' && (
-          <MiCuentaScreen 
-            usuario={usuario} 
-            setUsuario={setUsuario} 
-            esDoctor={esDoctor}
-            irAPanelDoctor={() => setPantalla('PANEL_DOCTOR')} 
-            cerrarSesion={() => setPantalla('AUTH')} 
-          />
-        )}
+  <MiCuentaScreen 
+    usuario={usuario} 
+    setUsuario={setUsuario} 
+    esDoctor={esDoctor}
+    irAPanelDoctor={() => setPantalla('PANEL_DOCTOR')} 
+    irAEditarDoctor={() => setPantalla('EDITAR_DOCTOR')}
+    cerrarSesion={() => setPantalla('AUTH')} 
+  />
+)}
 
         <View style={styles.bottomTabBar}>
           <TouchableOpacity style={styles.tabItem} onPress={() => setTabActual('HOME')}>
@@ -369,6 +371,7 @@ export default function App() {
   if (pantalla === 'AGENDAR') return <AgendarCitaScreen volver={() => setPantalla('PERFIL')} seleccionado={seleccionado} confirmarCita={confirmarCita} />;
   if (pantalla === 'PANEL_DOCTOR') return <PanelDoctorScreen volver={() => setPantalla('MAIN')} doctorId={usuario?.id || 1} doctorNombre={usuario?.nombre || "Especialista Equi"} />;
   if (pantalla === 'REGISTRO_PRO') return <RegistroProScreen volver={() => setPantalla('AUTH')} location={location} />;
+  if (pantalla === 'EDITAR_DOCTOR') return <PerfilDoctorEditarScreen volver={() => setPantalla('MAIN')} doctor={usuario} setDoctor={setUsuario} />;
 }
 
 const styles = StyleSheet.create({
