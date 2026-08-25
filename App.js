@@ -311,8 +311,19 @@ export default function App() {
                     </Text>
                   )}
                 </TouchableOpacity>
-              </View>
 
+                {/* BOTÓN REGISTRO DE ESPECIALISTAS */}
+                {rolSeleccionado === 'doctor' && (
+                  <TouchableOpacity 
+                    onPress={() => setPantalla('REGISTRO_PRO')} 
+                    style={{ marginTop: 14, alignItems: 'center', padding: 6 }}
+                  >
+                    <Text style={{ color: '#3B82F6', fontWeight: 'bold', fontSize: 13.5 }}>
+                      ¿Aún no tienes cuenta? Regístrate aquí 💼
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
               <View style={styles.lemaBox}>
                 <Text style={styles.lemaTexto}>🇵🇪 La red de salud mental y nutrición más grande y confiable del Perú.</Text>
               </View>

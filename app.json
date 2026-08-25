@@ -11,10 +11,10 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-   "ios": {
+    "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.equi.saludapp",
-      "buildNumber": "7",
+      "buildNumber": "8",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Equi necesita tu ubicación para encontrar especialistas en salud mental y nutrición cerca de ti.",
         "NSPhotoLibraryUsageDescription": "Equi necesita acceso a tus fotos para subir tu foto de perfil profesional."
@@ -22,6 +22,7 @@
     },
     "android": {
       "package": "com.equi.saludapp",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
